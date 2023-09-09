@@ -1,10 +1,23 @@
 {
-    "name": "your.own.package",
-    "displayName": "Your own package",
-    "version": "1.0.0",
-    "unity": "2019.2",
-    "description": "Some description",
-	"dependencies": {
-      
+  "name": "extensions.unity.terrain2d",
+  "displayName": "Terrain 2D",
+  "author": {
+    "name": "Ivan Murzak",
+    "url": "https://github.com/IvanMurzak"
+  },
+  "version": "0.0.1",
+  "unity": "2019.2",
+  "description": "Unity Terrain 2D editor creator tool.",
+  "dependencies": {
+    "com.unity.splines": "2.3.0"
+  },
+  "scopedRegistries": [
+    {
+      "name": "package.openupm.com",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.openupm"
+      ]
     }
+  ]
 }
