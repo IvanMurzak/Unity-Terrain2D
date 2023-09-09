@@ -28,10 +28,29 @@ namespace Terrain2D
             if (enabled && config && spline)
                 Build();
         }
+        void OnDrawGizmosSelected() 
+        {
+            float3 position, tangent, upVector;
+            var lines = 30;
+            for (int i = 0; i < lines; i++)
+            {
+                var t = i / lines;
+                if (!spline.Evaluate(t, out position, out tangent, out upVector))
+                {
+                    Debug.LogError($"spline.Evaluate(t = {t}) returned false");
+                }
+                Debug.DrawLine(position, position + upVector, Color.red, 10f, true);
+            }
+        }
 #endif
 
         public void Build()
         {
+            spline.Spline.Knots = spline.Spline.Knots.Select(x =>
+            {
+                x.Rotation = Quaternion.Euler(90, 0, 0);
+                return x;
+            }).ToList();
             var length = spline.Spline.GetLength();
             var fillLength = 0f;
             var spawnedInstanceIndex = 0;
@@ -46,12 +65,14 @@ namespace Terrain2D
             {
                 var t = fillLength / length;
                 var instanceData = spawnedInstanceIndex < instances.Count
-                    ? instances[spawnedInstanceIndex++]
+                    ? instances[spawnedInstanceIndex]
                     : null;
 
                 if (instanceData == null)
                 {
                     var block = config.blocks[0];
+                    if (block.GetLength() > length - fillLength)
+                        break;
 #if UNITY_EDITOR
                     var instance = UnityEditor.PrefabUtility.InstantiatePrefab(block.prefab, transform) as GameObject;
 #else
@@ -60,10 +81,18 @@ namespace Terrain2D
                     instanceData = new InstanceData(block, instance);
                     instances.Add(instanceData);
                 }
+                spawnedInstanceIndex++;
 
-                fillLength += instanceData.block.GetLength();
                 ApplyDeformVisual(instanceData, spline.Spline, t);
                 ApplyDeformCollider(instanceData, spline.Spline, t);
+
+                fillLength += instanceData.block.GetLength();
+            }
+            
+            while(instances.Count > spawnedInstanceIndex)
+            {
+                DestroyImmediate(instances.Last().instance.gameObject);
+                instances.RemoveAt(instances.Count - 1);
             }
         }
         bool ApplyDeformCollider(InstanceData instanceData, Spline spline, float t)
@@ -73,9 +102,21 @@ namespace Terrain2D
                 case DeformCollider.None:
                     break;
                 case DeformCollider.PolygonCollider2D:
+                {
+                    var refColliders = instanceData.block.prefab.GetComponentsInChildren<PolygonCollider2D>();
+                    var colliders = instanceData.instance.GetComponentsInChildren<PolygonCollider2D>();
+                    for (var i = 0; i < refColliders.Length; i ++)
+                        colliders[i].points = MathUtils.DeformVertices(spline, t, refColliders[i].points);
                     break;
+                }
                 case DeformCollider.EdgeCollider2D:
+                {
+                    var refColliders = instanceData.block.prefab.GetComponentsInChildren<EdgeCollider2D>();
+                    var colliders = instanceData.instance.GetComponentsInChildren<EdgeCollider2D>();
+                    for (var i = 0; i < refColliders.Length; i ++)
+                        colliders[i].points = MathUtils.DeformVertices(spline, t, refColliders[i].points);
                     break;
+                }
             }
             return false;
         }
@@ -84,17 +125,12 @@ namespace Terrain2D
             switch (instanceData.block.visualSource)
             {
                 case VisualSource.Sprite:
-                    return ApplyDeformSprite(instanceData, spline, t);
+                    foreach (var terrainBlockRenderer in instanceData.instance.GetComponentsInChildren<Terrain2D_BlockRenderer>())
+                        terrainBlockRenderer.Build(spline, t);
+                    return true;
                 default:
                     return false;
             }
-        }
-        bool ApplyDeformSprite(InstanceData instanceData, Spline spline, float t)
-        {
-            foreach (var terrainBlockRenderer in instanceData.instance.GetComponentsInChildren<Terrain2D_BlockRenderer>())
-                terrainBlockRenderer.Build(spline, t);
-
-            return true;
         }
     }
 }

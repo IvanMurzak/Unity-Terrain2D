@@ -15,15 +15,16 @@ MonoBehaviour:
   blocks:
   - prefab: {fileID: 2916328520844226563, guid: 0eeafcfeca5d9294396eeeddbf633586, type: 3}
     deformVisual: 1
+    visualSource: 0
     deformCollider: 2
     minScale:
-      x: 0
-      y: 0
-      z: 0
+      x: 1
+      y: 1
+      z: 1
     maxScale:
-      x: 0
-      y: 0
-      z: 0
+      x: 1
+      y: 1
+      z: 1
     flippableX: 0
     flippableY: 0
     flippableZ: 0

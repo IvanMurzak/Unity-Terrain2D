@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Unity.Mathematics;
 using UnityEngine;
@@ -9,15 +8,16 @@ namespace Terrain2D
 {
     static partial class MathUtils
     {
+        public static Vector2[] DeformVertices(Spline spline, float t, Vector2[] vertices)
+        {
+            var vertices3d = Array.ConvertAll(vertices, x => (Vector3)x);
+            vertices3d = DeformVertices(spline, t, vertices3d);
+            return Array.ConvertAll(vertices3d, x => (Vector2)x);
+        }
         public static Vector3[] DeformVertices(Spline spline, float t, Vector3[] vertices)
         {
             var splineLength = spline.GetLength();
-
             var left = vertices.Min(x => x.x);
-            // var right = vertices.Max(x => x.x);
-            // var length = right - left;
-
-            var deformedVertices = new Vector3[vertices.Length];
 
             float3 position, tangent, upVector;
             for (var i = 0; i < vertices.Length; i++)
@@ -29,13 +29,12 @@ namespace Terrain2D
                     Debug.LogError($"spline.Evaluate(t = {internalT}) returned false");
                     return null;
                 }
-                v.x += upVector.x;
-                v.y += upVector.y;
-                v.z += upVector.z;
+                upVector = Quaternion.Euler(-90, 0, 0) * upVector;
+                v = position + upVector * v.y;
 
-                deformedVertices[i] = v;
+                vertices[i] = v;
             }
-            return deformedVertices;
+            return vertices;
         }
     }
 }
